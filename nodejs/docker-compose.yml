@@ -1,0 +1,117 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: services-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pms_users
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password
+  mongodb:
+    image: mongo:7.0
+    container_name: microservices-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_ROOT_DATABASE: microservices-teams
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongodb:/docker-entrypoint-initdb.d
+    networks:
+      - microservices-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: 
+      context: ./nodejs-microservices/user-service
+      dockerfile: Dockerfile
+    container_name: micro-user-service
+    environment:
+      PORT: 8080
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: pms_users
+      JWT_SECRET: ef053ad1c3198bc3
+      JWT_EXPIRES_IN: 24h
+      RESET_TOKEN_SECRET: def63565a50604db
+      CLIENT_URL: http://localhost:3000
+      EMAIL_HOST: gmail
+      EMAIL_USER: karatzapanagoula@gmail.com
+      EMAIL_PASSWORD: erfr wvju oywn deog    
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  team-service:
+    build: 
+      context: ./nodejs-microservices/team-service
+      dockerfile: Dockerfile
+    container_name: micro-team-service
+    environment:
+      PORT: 8081
+      NODE_ENV: production
+      MONGO_URI: mongodb://admin:adminpassword@mongodb:27017/micro_teams?authSource=admin
+      JWT_SECRET: ef053ad1c3198bc3
+      JWT_EXPIRES_IN: 24h    
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  task-service:
+    build: 
+      context: ./nodejs-microservices/task-service
+      dockerfile: Dockerfile
+    container_name: micro-task-service
+    environment:
+      PORT: 8082
+      NODE_ENV: production
+      MONGO_URI: mongodb://admin:adminpassword@mongodb:27017/micro_tasks?authSource=admin
+      JWT_SECRET: ef053ad1c3198bc3
+      JWT_EXPIRES_IN: 24h    
+    ports:
+      - "8082:8082"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+    
+volumes:
+  mysql_data:
+  mongo_data:
