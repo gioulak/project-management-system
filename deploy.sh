@@ -36,21 +36,21 @@ export $(cat .env.production | xargs)
 
 # stop containers if running
 print_status "Stopping conatainers"
-docker compose -f docker-compose.prod.yml down 2>/dev/null || true
+docker compose --env-file .env -f docker-compose.prod.yml down 2>/dev/null || true
 
 # build
 print_status "Building docker images"
-docker compose -f docker-compose.prod.yml build --no-cache
+docker compose --env-file .env -f docker-compose.prod.yml build --no-cache
 
 # start
 print_status "Starting services"
-docker compose -f docker-compose.prod.yml up -d
+docker compose --env-file .env -f docker-compose.prod.yml up -d
 
 sleep 10
 
 # chech the status of the services
 print_status "Checking status service"
-docker compose -f docker-compose.prod.yml ps
+docker compose --env-file .env -f docker-compose.prod.yml ps
 
 #health starus
 echo ""
@@ -60,7 +60,7 @@ docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 #logs
 echo ""
 echo "Logs"
-docker compose -f docker-compose.prod.yml logs --tail=20
+docker compose --env-file .env -f docker-compose.prod.yml logs --tail=20
 
 EXTERNAL_IP=$(curl -s ifconfig.me)
 

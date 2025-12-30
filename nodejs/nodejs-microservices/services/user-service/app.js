@@ -15,7 +15,10 @@ require('./config/database');
 const port = process.env.PORT || 8080;
 
 const app = express();
-app.use(cors());
+app.use(cors({
+	origin: ['http://localhost:3000', 'http://34.38.187.213:3000'],
+	credentials: true
+}));
 //adding middleware to parse the cookies and more
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
