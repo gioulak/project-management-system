@@ -1,185 +1,173 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from 'next/link';
 import { Lock, AlertCircle, CheckCircle, Loader2} from 'lucide-react';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
 
-    const [formData, setFormData] = useState({
-        password: '',
-        confirmPassword: '',
-    });
-
-    const [isLoading, setIsLoading] = useState(false);
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
-
-    useEffect(() => {
-        if (!token) {
-            setError('Invalid or missing reset token');
-        }
-    }, [token]);
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (formData.password !== formData.confirmPassword) {
+        if (password !== confirmPassword) {
             setError('Passwords do not match');
             return;
         }
 
-        if(formData.password.length < 6) {
-            setError('Password must me at least 6 characters long');
+        if (!token) {
+            setError('Invalid reset token');
             return;
         }
-        setIsLoading(true);
+
+        setLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/reset-password`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+            const response = await fetch(`${apiUrl}/api/auth/reset-password`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    token,
-                    password: formData.password,
-                 }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, password }),
             });
 
-            const data = await response.json();
-            if(!response.ok) {
-                throw new Error(data.message || 'Failed to reset password');
+            if (response.ok) {
+                setSuccess(true);
+                setTimeout(() => router.push('/auth/login'), 3000);
+            } else {
+                const data = await response.json();
+                setError(data.message || 'Failed to reset password');
             }
-            setSuccess(true);
-            //redirecting to lofin
-            setTimeout(() => {
-                router.push('/auth/login');
-            }, 3000);
-        } catch (err: any) {
-            setError(err.message || 'Something went wrong. Please try again.');
+        } catch (err) {
+            setError('An error occurred. Please try again.');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
-    if(success) {
-        return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <div className="bg-surface border border-border rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-success/20 rounded-full mb-4">
-                            <CheckCircle className="h-8 w-8 text-success" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-foreground">Password reset</h2>
-                    <p className="text-muted mb-4">
-                        Your password has been reset successfully
-                    </p>
-                    <p className="text-sm text-muted">Redirecting to login...</p>
-                    </div>
-                </div>
-            );
-    }
-
     return (
-            <div className="min-h-screen bg-background flex items-center justify-center p-4">
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary opacity-10 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent opacity-10 rounded-full blur-3xl"></div>
-                </div>
-                {/** form card */}
-                <div className="relative w-full max-w-md">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 px-4 relative overflow-hidden">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-blue-500/10 rounded-full blur-3xl animate-blob"></div>
+                <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-purple-500/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+            </div>
+
+            <div className="w-full max-w-md relative z-10">
+                <div className="bg-surface/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-border p-8">
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-primary rounded-2xl mb-4 shadow-lg">
-                             <Lock className="h-8 w-8 text-white" />
+                            <Lock className="w-8 h-8 text-white" />
                         </div>
                         <h1 className="text-3xl font-bold text-foreground mb-2">Reset Password</h1>
-                        <p className="text-muted">Enter your new password.</p>
+                        <p className="text-muted">Enter your new password below</p>
                     </div>
-                    {/** form card */}
-                    <div className="bg-surface border border-border rounded-2xl shadow-xl p-8 backdrop-blur-sm">
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/** error alert */}
+
+                    {success ? (
+                        <div className="bg-green-500/10 border border-green-500/50 rounded-xl p-4 mb-6 flex items-start gap-3">
+                            <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-green-400 font-medium">Password reset successful!</p>
+                                <p className="text-green-300/80 text-sm mt-1">Redirecting to login...</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                             {error && (
-                                <div className="bg-danger/10 border border-danger/20 text-danger px-4 py-3 rounded-lg flex items-center space-x-2">
-                                    <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                                    <span className="text-sm">{error}</span>
+                                <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-4 mb-6 flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-red-400 text-sm">{error}</p>
                                 </div>
                             )}
 
-                            {/** password */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-foreground mb-2">
-                                                        New Password
-                                                    </label>
-                                                    <div className="relative">
-                                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted" />
-                                                        <input
-                                                            type="password"
-                                                            required
-                                                            value={formData.password}
-                                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                            className="w-full pl-10 pr-4 py-3 bg-input-bg border border-input-border rounded-lg text-foreground placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/20 transition-smooth"
-                                                            placeholder="••••••"
-                                                            minLength={6}
-                                                        />
-                                                    </div>
-                                                    <p className="mt-1 text-xs text-muted">Must be at least 6 characters</p>
-                                                    </div>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div>
+                                    <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+                                        New Password
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-background/50 border border-border rounded-xl text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                            placeholder="Enter new password"
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                </div>
 
-                            {/** confirm password */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-foreground mb-2">
-                                                        Confirm New Password
-                                                    </label>
-                                                    <div className="relative">
-                                                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted" />
-                                                        <input
-                                                            type="password"
-                                                            required
-                                                            value={formData.confirmPassword}
-                                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                                            className="w-full pl-10 pr-4 py-3 bg-input-bg border border-input-border rounded-lg text-foreground placeholder-muted focus:border-primary focus:ring-2 focus:ring-primary/20 transition-smooth"
-                                                            placeholder="••••••"
-                                                            minLength={6}
-                                                        />
-                                                    </div>
-                                                </div>
-                            
-                            {/** submit button */}
-                    <button
-                        type="submit"
-                        disabled={isLoading || !token}
-                        className="w-full bg-gradient-primary text-white font-medium py-3 px-4 rounded-lg hover:opacity-90 transition-smooth disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                    >
-                        {isLoading ? (
-                            <>
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                <span>Resetting...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Lock className="h-5 w-5" />
-                                <span>Reset Password</span>
-                            </>
-                        )}
-                    </button>
-                </form>
+                                <div>
+                                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-2">
+                                        Confirm Password
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
+                                        <input
+                                            id="confirmPassword"
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-background/50 border border-border rounded-xl text-foreground placeholder-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                            placeholder="Confirm new password"
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                </div>
 
-                {/** back to login */}
-                <div className="mt-6 text-center">
-                    <Link
-                        href="/auth/login"
-                        className="text-sm text-muted hover:text-foreground transition-smooth">
-                            Remember your password? Sign In
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-gradient-primary text-white py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-primary/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Resetting Password...
+                                        </>
+                                    ) : (
+                                        'Reset Password'
+                                    )}
+                                </button>
+                            </form>
+                        </>
+                    )}
+
+                    <div className="mt-6 text-center">
+                        <Link
+                            href="/auth/login"
+                            className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
+                        >
+                            Back to login
                         </Link>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        }>
+            <ResetPasswordForm />
+        </Suspense>
     );
 }
