@@ -1,54 +1,25 @@
 # Project Management System
 
-## Project Overview
-The project impliments a Project Management System using microservices architecture. The system contains 3 backend services(User,Team,Task) and a React-based frontend. These services are all containerix=zed with Docker and deployed on Google Cloud Platform.
-
-## Live Demo
- **Aplication URL:** http://34.38.187.213:3000
-
-**Admin Credentials:**
-- Username: `admin`
-- Password: `admin123`
+A microservices-based project management app deployed on Google Cloud Platform.
 
 ## Architecture
-The sytsem consists of 3 microservices:
 
-1. **User Service** (Port 8080) - MySQL
-    - Authentication
-    - User management
-    - Role-based access contril
+3 backend services + React frontend, containerized with Docker:
 
-2. **Team Service** (Port 8081) - MongoDB
-     - Team creation
-     - Member assignment
+- **User Service** (Port 8080) — MySQL, JWT auth, role-based access control
+- **Team Service** (Port 8081) — MongoDB, team creation and member assignment  
+- **Task Service** (Port 8082) — MongoDB, task CRUD, status tracking, comments
+- **Frontend** (Port 3000) — Next.js, React 19, TypeScript, Redux Toolkit, Tailwind CSS
 
-3. **Task Service** (Port 8082) - MongoDB
-     - Task CRUD operations
-     - Status managemnet
-     - Comments
+## Tech Stack
 
-4. **Frontend** (Port 3000) - Next.js
+**Backend:** Node.js, Express.js, MySQL 8.0, MongoDB 7, JWT, bcrypt  
+**Frontend:** Next.js, React 19, TypeScript, Redux Toolkit, Tailwind CSS v4  
+**DevOps:** Docker, Docker Compose, Google Cloud Platform, Ubuntu 24.04
 
-## Tecknologies used
+## Run locally
 
-### Backend
-- Node.js + Express.js
-- MySQL 8.0
-- MongoDB 7
-- JWT Authentication
-- bcrypt 
-
-### Frintend
-- Next.js
-- React 19
-- TypeScript
-- Redux Toolkit & RTK Query
-- Tailwind CSS v4
-
-### DevOps
-- Docker, Docker Compose
-- Google Cloud Platform
-- Ubuntu 24.04
-
-## Documentation
-For detailed deployment infos, see [REPORT.md](./REPORT.md)
+git clone https://github.com/gioulak/project-management-system.git
+cd project-management-system
+cp .env.example .env  # fill in your values
+docker-compose up --build
