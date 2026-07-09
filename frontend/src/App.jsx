@@ -4,7 +4,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
-import Tasks from '/pages/Tasks'
+import Tasks from './pages/Tasks'
 import MyTasks from './pages/MyTasks';
 import Admin from './pages/Admin';
 
