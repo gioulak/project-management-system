@@ -14,7 +14,7 @@ A microservices-based project management app deployed on Google Cloud Platform.
 ## Tech Stack
 
 **Backend:** Node.js, Express.js, MySQL 8.0, MongoDB 7, JWT, bcrypt  
-**Frontend:** Next.js, React 19, TypeScript, Redux Toolkit, Tailwind CSS v4  
+**Frontend:** React 18, Vite, JavaScript  
 **DevOps:** Docker, Docker Compose, Google Cloud Platform, Ubuntu 24.04
 
 ## Run locally
