@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # MySQL Database for User Service
+  mysql:
+    image: mysql:8.0
+    container_name: pms-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: pms_users
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - pms-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database for Team and Task Services
+  mongodb:
+    image: mongo:7.0
+    container_name: pms-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_DATABASE: pms_teams
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./database/mongodb:/docker-entrypoint-initdb.d
+    networks:
+      - pms-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # User Service
+  user-service:
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: pms-user-service
+    environment:
+      PORT: 8080
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: pms_users
+      JWT_SECRET: a8f5f167f44f4964e6c998dee827110c
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - pms-network
+    restart: unless-stopped
+
+  # Team Service
+  team-service:
+    build:
+      context: ./backend/team-service
+      dockerfile: Dockerfile
+    container_name: pms-team-service
+    environment:
+      PORT: 8081
+      NODE_ENV: production
+      MONGO_URI: mongodb://admin:adminpassword@mongodb:27017/pms_teams?authSource=admin
+      JWT_SECRET: a8f5f167f44f4964e6c998dee827110c
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "8081:8081"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - pms-network
+    restart: unless-stopped
+
+  # Task Service
+  task-service:
+    build:
+      context: ./backend/task-service
+      dockerfile: Dockerfile
+    container_name: pms-task-service
+    environment:
+      PORT: 8082
+      NODE_ENV: production
+      MONGO_URI: mongodb://admin:adminpassword@mongodb:27017/pms_tasks?authSource=admin
+      JWT_SECRET: a8f5f167f44f4964e6c998dee827110c
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "8082:8082"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - pms-network
+    restart: unless-stopped
+
+networks:
+  pms-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  mongodb_data:

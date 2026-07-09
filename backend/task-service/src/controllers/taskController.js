@@ -10,6 +10,16 @@ exports.createTask = async (req, res) => {
       return res.status(400).json({ 
         error: 'Title, description, teamId, assignedTo, and dueDate are required' 
       });
+    
+    }
+
+    //validate dueDate
+    const parseDate = new Date(dueDate);
+    if(isNaN(parseDate.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+    if (parseDate < new Date()) {
+      return res.status(400).json({ error: 'Due date is wrong, must be in the future!'});
     }
 
     // Create task
